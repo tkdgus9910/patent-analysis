@@ -40,8 +40,10 @@ def calculate_CRn(data, group, citation_forward_count,n) :
     return(sum(share[0:n]))
 
 def calculate_HHI(data, group, id_publication) : 
+    # nan 제외
+    data = data.dropna(subset = [group, id_publication])
     count = data.groupby(group)[id_publication].count()
-    total = data.shape[0]
+    total = count.shape[0]
     share = [i/total*100 for i in count]
     hhi = sum([i*i for i in share])
     
