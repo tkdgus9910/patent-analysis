@@ -16,7 +16,7 @@ from datetime import datetime
 # 출원인 대표명화
     
     # 데이터 전처리
-def wisdomain_prep(data) :
+def wisdomain_prep(data, drop_families = 1) :
     
     dictionary = {    
         
@@ -120,8 +120,9 @@ def wisdomain_prep(data) :
     
     
     applicant_rep_list = data['applicant_rep'].apply(lambda x : x.lower() if str(x) != 'nan' else x)
+    
     applicant_rep_list = prep_applicant_rep(applicant_rep_list)
-    data['applicant_rep'] = applicant_rep_list
+    data['applicant_rep_icon'] = applicant_rep_list
     
     data['inventor'] = data['inventor'].apply(lambda x : [i.lower() for i in x] if str(x) != 'nan' else x)
     
@@ -136,12 +137,8 @@ def wisdomain_prep(data) :
     
     # 패밀리특허 중복 제거
     data['id_family'] = data['id_family'].apply(lambda x : str(int(x)) if str(x) != 'nan' else x)
-    data = data.drop_duplicates(subset=  ['id_family'], keep = 'first')
-    
-    
-    
-    #%%
-     
+    if drop_families == 1 : 
+        data = data.drop_duplicates(subset=  ['id_family'], keep = 'first')
     
     data = data.reset_index(drop = 1)
     
@@ -157,7 +154,7 @@ def prep_applicant_rep(applicant_rep_list) :
         applicant_rep_list = [re.sub(pattern, "", i) if str(i) != 'nan' else i  for i  in applicant_rep_list  ]        
     
     applicant_rep_list = [i.split('|')[0] if str(i) != 'nan' else i  for i  in applicant_rep_list  ]        
-    applicant_rep_list = [re.sub("  ", " ", i).strip() if str(i) != 'nan' else i  for i  in applicant_rep_list  ]        
+    applicant_rep_list = [re.sub("  ", " ", i).strip().upper() if str(i) != 'nan' else i  for i  in applicant_rep_list  ]        
         
     return(applicant_rep_list)
 
