@@ -92,7 +92,7 @@ if __name__ == '__main__':
     result = result.reset_index()
     result = result.sort_values(by = 'sum', ascending = 0).reset_index(drop = 1)
     
-    # best : 기준 2-2. 로그보정 합
+    # 기준 2-2. 로그보정 합 -> best?
     grouped = data_input.groupby('applicant_rep_icon')
     result = grouped['citation_forward_domestic_count_sqrt'].agg(['sum'])
     result = result.reset_index()
