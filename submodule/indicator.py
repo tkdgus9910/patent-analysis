@@ -55,10 +55,6 @@ def CAGR(first, last, periods):
     return (last/first)**(1/periods)-1 
 
 def calculate_CAGR(data, year_application, min_year, max_year) : 
-    
-    # min_year = min(data[year_application])
-    # max_year = max(data[year_application])
-    
     periods = max_year-min_year
     first = data.loc[data[year_application] == min_year , :].shape[0]
     last = data.loc[data[year_application] == max_year , :].shape[0]
