@@ -77,7 +77,7 @@ if __name__ == '__main__':
     data_input['citation_forward_domestic_count_z'] = data_input['citation_forward_domestic_count_z'].fillna(0)
     
     
-    #%% 3. 주요 출원인 추출
+    #%% 3. 주요 출원인 분석
     import indicator
     
     # 기준 1. 특허수
