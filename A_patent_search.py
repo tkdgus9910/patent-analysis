@@ -31,82 +31,69 @@ if __name__ == '__main__':
                
     data_ = preprocess.wisdomain_prep(data)    
     
+
     #%% data filtering- 1. F-term, IPC 장전
-    
-    # data_input = data_.sample(500).reset_index(drop = 1)
     data_input = data_.loc[data_['year_application'] >= 2000 , :].reset_index(drop = 1) # 1000건 제외
     
-    #%% embedding definition
     
-    directory_ = 'D:/OneDrive/연구실 과제(현대차_진섭)/2. 기능분석/2차워크숍 기초자료/'
+    #%% 2. 대표청구항 분해
+    import re 
     
-    definitions = pd.read_excel(directory_ + '분리결합체계_정의.xlsx',
-                                sheet_name = 'Mechanical Attach_Detach_2nd')
-    definitions['definition'] = definitions['definition'].apply(lambda x : x.strip())
-    # definition_2nd = {}
-    definition_2nd = dict(zip(definitions['category'], definitions['definition']))
-    definition_2nd = dict(sorted(definition_2nd.items()))
+    # 2-A. rule-based splitting
+    # data_input['claims_decomposed'] = data_input['claims_rep'].apply(lambda x: re.split(r';|:', x))
+    # data_input['claims_decomposed'] = data_input['claims_decomposed'].apply(lambda x: [i.strip() for i in x if len(i) >= 30])
     
+    #%% 반복수행
+    from openai import OpenAI
+    client = OpenAI()
     
-    #%% 2. embedding text
-    from sentence_transformers import SentenceTransformer
+    # data_input['claims_decomposed'] = [[] for i in data_input['claims']]
     
-    embedding_model = SentenceTransformer('AI-Growth-Lab/PatentSBERTa')
-    # embeddings_title = embedding_model.encode(data_input['title'] ,device='cuda')
-    embeddings_TA = embedding_model.encode(data_input['TA'] ,device='cuda')
-    embeddings_claims_rep = embedding_model.encode(data_input['claims_rep'] ,device='cuda')
+    for idx, row in data_input.iterrows() : 
+        if len(data_input['claims_decomposed'][idx]) == 0 : 
+                
+            print(idx)
+            claim = row['claims_rep']
+            prompt = """Decomposed and simplified the complex sentence into clearer, more manageable parts
+Q : 1. A connection for an open clamp, comprising clamping band means including clamping band portions adapted to overlap in the installed position, tightening means for tightening the clamp about an object to be fastened thereby, connecting means for connecting overlapping band portions including at least one hook-shaped means performing a guide function during tightening of the clamp and extending outwardly from the inner band portion, said hook-shaped means being operable to engage in at least one aperture in the outer band portion, and abutment surface means in said hook-shaped means for preventing disengagement of the connecting means during the entire tightening operation.
+A : ['A connection for an open clamp is described.',
+ 'This connection includes a clamping band with portions designed to overlap when installed.',
+ 'There are means for tightening the clamp around an object that needs to be fastened.',
+ 'For connecting the overlapping band portions, it features at least one hook-shaped element.',
+ 'This hook-shaped element aids in guiding during the tightening process and protrudes outward from the inner band portion.',
+ 'It is designed to latch into at least one aperture on the outer band portion.',
+ 'Additionally, the hook-shaped element has an abutment surface.',
+ 'This surface prevents the disengagement of the connecting elements throughout the tightening process.']   
+Q : """
+    
+            prompt += claim #원하는 문서
+            prompt += "\nA : "
+            
+            instruction = "Just return a result as a Python list format"
+            
+            completion = client.chat.completions.create(
+                # model="gpt-4-0125-preview",
+                model="gpt-3.5-turbo-0125",
+                messages=[
+                {"role": "user", 
+                 "content": prompt},{"role" : "system", "content" : instruction}
+                ])
+            
+            data_input['claims_decomposed'][idx] = completion.choices[0].message.content
+    
     #%%
     
-    embeddings_definitions = np.array([]).reshape(-1,768)
+    import pickle
     
-    for category, definition in definition_2nd.items() :
-        
-        definition = category + '. ' + definition
-        print(definition)
-        temp = embedding_model.encode(definition)
-        embeddings_definitions = np.vstack((embeddings_definitions, temp))
-        
+    with open(directory_+ 'claims_decomposed.pkl', 'wb') as f:
+        pickle.dump(data_input, f)
     
-    #%%
-    
-    from sklearn.metrics.pairwise import cosine_similarity
-
-    distance_matrix = cosine_similarity(embeddings_claims_rep,embeddings_definitions) #p2p
+    # with open(directory_ + 'cl')
     
     
-    top10_indices_by_columns = np.argsort(distance_matrix, axis = 0)[-20:] #top 10 indices
-    top10_indices_by_columns = top10_indices_by_columns[::-1] # reverse
     
-    result = pd.DataFrame()
     
-    for col_idx in range(0, top10_indices_by_columns.shape[1]) :
-        print(col_idx)
-        rank = 1
-        for row_idx in top10_indices_by_columns[:,col_idx] :
-            print(row_idx)
-            
-            # 정의 및 목차 관련
-            category = list(definition_2nd.keys())[col_idx]
-            definition = list(definition_2nd.values())[col_idx]
-            
-            
-            # 특허 관련
-            similarity = distance_matrix[row_idx, col_idx]
-            id_wisdomain = data_input['id_wisdomain'][row_idx]
-            claims_rep = data_input['claims_rep'][row_idx]
-        
-        
-            data_temp = pd.DataFrame([{'category' : category,
-                                      'definition' : definition,
-                                      'rank' : rank,
-                                      'similarity' : similarity,
-                                      'id_wisdomain' : id_wisdomain,
-                                      'claims_rep' : claims_rep}])
-            result = pd.concat([result, data_temp], axis= 0 )
-            rank += 1
+    
             
     
-    result = result.reset_index(drop = 1)
-    result.to_excel(directory_ + 'match_patent_pilot.xlsx')
     
-    #%% 3. 
