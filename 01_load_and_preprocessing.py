@@ -25,8 +25,9 @@ if __name__ == '__main__':
             
     # 위즈도메인 csv 파일이 존재하는 디렉토리 설정
     directory = os.environ['directory_path']
-    directory += '우주/'
+    directory += 'LLM/'
     
+    #%%
     
     file_list = os.listdir(directory)
     data = pd.DataFrame()
@@ -34,12 +35,12 @@ if __name__ == '__main__':
     for file in file_list : 
         if '.csv' in file : 
             temp_data = pd.read_csv(directory + file, skiprows = 4)
+            temp_data = preprocess.wisdomain_prep(temp_data)    
             temp_data['file'] = file
+            
             data = pd.concat([data, temp_data], axis = 0).reset_index(drop =1)
-               
-    data_ = preprocess.wisdomain_prep(data)    
     
     
     # 전처리 후 경로에 저장 
     with open(directory + 'data_preprocessed.pkl', 'wb') as file:  
-        pickle.dump(data_, file)  
+        pickle.dump(data, file)  

@@ -18,6 +18,8 @@ from datetime import datetime
     # 데이터 전처리
 def wisdomain_prep(data, drop_families = 1) :
     
+    data['출원국가'] = data['번호'].apply(lambda x : x[:2])
+    
     dictionary = {    
         
         # id
@@ -26,11 +28,13 @@ def wisdomain_prep(data, drop_families = 1) :
         '등록번호' : 'id_registration',
         '번호' : 'id_wisdomain',
         '패밀리 번호' : 'id_family',
+        '출원국가' : 'country',
           
         # human information
         '출원인' : 'applicants',
-        '출원인대표명' : 'applicant_rep',
         '출원인국가' : 'applicant_country', 
+        '출원인대표명' : 'applicant_rep',
+        
         '발명자' : 'inventor',
         '발명자국가' : 'inventor_country',
         
@@ -47,10 +51,10 @@ def wisdomain_prep(data, drop_families = 1) :
         
         # text
         '명칭' : 'title',
-        # '명칭(원문)' : 'title',
         
         '요약' : 'abstract',
-        # '요약(원문)' : 'abstract',
+        '요약(원문)' : 'abstract_',
+        '요약(번역)' : 'abstract_',
         
         '전체 청구항' : 'claims', 
         '대표 청구항' : 'claims_rep', 
@@ -70,11 +74,14 @@ def wisdomain_prep(data, drop_families = 1) :
         '자국피인용특허' : 'citation_forward_domestic', 
         }
     
+    
     cols = [i for i in data.columns if i in list(dictionary.keys())]
     
     if 'title' not in cols :
         dictionary['명칭(원문)'] = 'title'
+        dictionary['명칭(번역)'] = 'title_'
         dictionary['요약(원문)'] = 'abstract'
+        dictionary['요약(번역)'] = 'abstract_'
     
     cols = [i for i in data.columns if i in list(dictionary.keys())]
         
@@ -100,6 +107,9 @@ def wisdomain_prep(data, drop_families = 1) :
     
     data['applicants'] = data['applicants'].apply(lambda x : x.split('|') if str(x) != 'nan' else x)
     data['applicant_country'] = data['applicant_country'].apply(lambda x : x.split('|') if str(x) != 'nan' else x)
+    data['applicant_country_rep'] = data['applicant_country'].apply(lambda x : x[0] if str(x) != 'nan' else x)
+    
+    
     data['inventor'] = data['inventor'].apply(lambda x : x.split('; ') if str(x) != 'nan' else x)
     data['inventor_country'] = data['inventor_country'].apply(lambda x : x.split('|') if str(x) != 'nan' else x)
     
@@ -136,9 +146,9 @@ def wisdomain_prep(data, drop_families = 1) :
     
     
     # 패밀리특허 중복 제거
-    data['id_family'] = data['id_family'].apply(lambda x : str(int(x)) if str(x) != 'nan' else x)
-    if drop_families == 1 : 
-        data = data.drop_duplicates(subset=  ['id_family'], keep = 'first')
+    # data['id_family'] = data['id_family'].apply(lambda x : str(int(x)) if str(x) != 'nan' else x)
+    # if drop_families == 1 : 
+    #     data = data.drop_duplicates(subset=  ['id_family'], keep = 'first')
     
     data = data.reset_index(drop = 1)
     

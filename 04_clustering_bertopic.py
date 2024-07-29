@@ -6,7 +6,6 @@ Created on Mon Apr  8 15:25:05 2024
 """
 
 
-
 if __name__ == '__main__':
     
     import os
@@ -18,9 +17,9 @@ if __name__ == '__main__':
     from copy import copy
     import re
     from collections import Counter
+    
     from sentence_transformers import SentenceTransformer
     from umap import UMAP
-    
     import matplotlib.pyplot as plt
     from hdbscan import HDBSCAN
     from sklearn.feature_extraction import text 
@@ -31,8 +30,6 @@ if __name__ == '__main__':
     from bertopic import BERTopic
     from bertopic.dimensionality import BaseDimensionalityReduction
     
-    from scipy import stats
-    
     
     def bertopic_wrapper(min_cluister_size, docs, embeddings, cs_method,return_) :
         
@@ -41,18 +38,16 @@ if __name__ == '__main__':
         
         custom_stopwords = ['described', 'apparatus', 'include' , 'includes', 'consists', 'features', 
                             'feature', 'device', 'allows', 'allow', 'use', 'method', 'comprises', 'various', 'section', 'said']
+        
         stop_words = list(_stop_words.ENGLISH_STOP_WORDS.union(custom_stopwords))
         
         vectorizer_model = CountVectorizer(stop_words= stop_words,
                                            min_df = 0.0001,
                                            max_df = 0.5,
-                                            ngram_range = (1,2),
-                                           preprocessor=lambda x: re.sub(r'\d+', '', x).lower().strip()
-                                           
-                                           )
+                                           ngram_range = (1,2),
+                                           preprocessor=lambda x: re.sub(r'\d+', '', x).lower().strip())
         
         # Fit BERTopic without actually performing any dimensionality reduction
-                
         cluster_model = HDBSCAN(min_cluster_size= min_cluister_size, 
                                 # min_samples = int(min_cluister_size/5),                            
                                 min_samples = 1,                            
@@ -130,7 +125,6 @@ if __name__ == '__main__':
         plt.xlabel('Min_cluister_size', fontsize=15)
         plt.ylabel('Mean_cluster_persistences', fontsize=15)
         
-        
         # 시각화-Outlier
         plt.figure(figsize=(12,8))
         plt.subplot(311)
@@ -163,7 +157,6 @@ if __name__ == '__main__':
     directory = os.path.dirname(os.path.abspath(__file__))
     directory = directory.replace("\\", "/") # window
     sys.path.append(directory+'/submodule')
-    import preprocess
             
     # 위즈도메인 csv 파일이 존재하는 디렉토리 설정
     directory = os.environ['directory_path']
@@ -172,11 +165,11 @@ if __name__ == '__main__':
     file_list = os.listdir(directory)
     
     # 데이터 로드 
-    with open(directory + 'data_preprocessed.pkl', 'rb') as file:  
+    with open(directory + 'data_background.pkl', 'rb') as file:  
         data_preprocessed = pickle.load(file)  
         
     
-    #%% phase 1. only text
+    #%% case 1. only text
     
     embedding_model = SentenceTransformer('AI-Growth-Lab/PatentSBERTa')
     
@@ -190,7 +183,7 @@ if __name__ == '__main__':
     
     bertopic_parameter_tuning(range(5,101,5), docs, embeddings_input, method = 'eom')
     
-    #%% phase 2. with CPC
+    #%% case 2. with CPC
     
     # cpc_mg
     res = pd.DataFrame([Counter(x) for x in data_preprocessed['CPC_mg']]).fillna(0) # cpc_mg
@@ -206,7 +199,7 @@ if __name__ == '__main__':
     
     bertopic_parameter_tuning(range(5,101,5), docs, embeddings_input, method = 'eom')
     
-    #%% get topic
+    #%% case 3. get topic
     
     topic_model1 = bertopic_wrapper(65, 
                                     docs, 

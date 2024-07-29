@@ -19,7 +19,7 @@ if __name__ == '__main__':
             
     # 위즈도메인 csv 파일이 존재하는 디렉토리 설정
     directory = os.environ['directory_path']
-    directory += '우주/'
+    directory += 'LLM/'
     
     file_list = os.listdir(directory)
     
@@ -35,10 +35,37 @@ if __name__ == '__main__':
     # 2500 이상 : highly concentrated
     
     ###
-    import indicator
+    
+    
+    def calculate_hhi(market_shares):
+        """
+        Calculate the Herfindahl-Hirschman Index (HHI).
+    
+        Parameters:
+        market_shares (list or np.array): List or array of market shares (in percentage, e.g., [30, 20, 20, 10, 10, 10])
+    
+        Returns:
+        float: HHI value
+        """
+        # Convert market shares to proportions
+        market_shares = np.array(market_shares) / 100
+        
+        # Calculate HHI
+        hhi = np.sum(market_shares**2) * 10000  # multiplying by 10000 to get the index in percentage points
+        
+        return hhi
+    
+    #%%
     
     # 분야 HHI 변화 확인 : 2000년 이전
-    data_input = data_preprocessed.loc[data_preprocessed['year_application'] < 2000, :].reset_index(drop = 1)
+    data_input = data_preprocessed.loc[data_preprocessed['file'] == 'quantum .csv', :].reset_index(drop = 1)
+    result = data_input.groupby(['applicant_rep']).size()
+    result = result/result.sum()*100
+    HHI = calculate_hhi(result)
+    
+    print(data_input['file'][0], HHI)
+    
+    #%%
     print(indicator.calculate_HHI(data_input, 'applicant_rep_icon', 'id_publication'))
     
     # 분야 HHI 변화 확인 : 현재까지 
