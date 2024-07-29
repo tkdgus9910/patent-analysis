@@ -281,8 +281,7 @@ if __name__ == '__main__':
     data_us = data_us.drop_duplicates(subset=  ['id_family'], keep = 'first').reset_index(drop = 1)
     
     #%% 2-2. generating field
-    
-    key = "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"
+
     
     client = OpenAI(api_key= key)
     
@@ -1001,7 +1000,6 @@ Based on the above information, can you give a korean label of the technology?""
     # data_input['hierarchy_1'] = data_input.apply(lambda x : x.hierarchy_0+ "_" + x.hierarchy_1, axis =1)
     
     df = data_input.groupby(['applicant_rep_icon','hierarchy_0','hierarchy_1']).size()
-    
     
     df = df.reset_index(drop = 0)
     

@@ -64,7 +64,6 @@ if __name__ == '__main__':
     # data['abstract'][0]
     
     #%% generate smaple answer
-    key = "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"
     
     client = OpenAI(api_key= key)
     
