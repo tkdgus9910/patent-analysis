@@ -34,43 +34,21 @@ if __name__ == '__main__':
     # 1500~2500 : moderately concentrated
     # 2500 이상 : highly concentrated
     
-    ###
-    
-    
-    def calculate_hhi(market_shares):
-        """
-        Calculate the Herfindahl-Hirschman Index (HHI).
-    
-        Parameters:
-        market_shares (list or np.array): List or array of market shares (in percentage, e.g., [30, 20, 20, 10, 10, 10])
-    
-        Returns:
-        float: HHI value
-        """
-        # Convert market shares to proportions
-        market_shares = np.array(market_shares) / 100
-        
-        # Calculate HHI
-        hhi = np.sum(market_shares**2) * 10000  # multiplying by 10000 to get the index in percentage points
-        
-        return hhi
-    
-    #%%
+    import indicator
     
     # 분야 HHI 변화 확인 : 2000년 이전
-    data_input = data_preprocessed.loc[data_preprocessed['file'] == 'quantum .csv', :].reset_index(drop = 1)
+    data_input = data_preprocessed.loc[data_preprocessed['file'] == 'quantum.csv', :].reset_index(drop = 1)
     result = data_input.groupby(['applicant_rep']).size()
     result = result/result.sum()*100
-    HHI = calculate_hhi(result)
+    HHI = indicator.calculate_HHI(result)
     
     print(data_input['file'][0], HHI)
     
-    #%%
-    print(indicator.calculate_HHI(data_input, 'applicant_rep_icon', 'id_publication'))
+    # print(indicator.calculate_HHI(data_input, 'applicant_rep_icon', 'id_publication'))
     
     # 분야 HHI 변화 확인 : 현재까지 
-    data_input = data_preprocessed.loc[data_preprocessed['year_application'] < 2023, :].reset_index(drop = 1)
-    print(indicator.calculate_HHI(data_input, 'applicant_rep_icon', 'id_publication'))
+    # data_input = data_preprocessed.loc[data_preprocessed['year_application'] < 2023, :].reset_index(drop = 1)
+    # print(indicator.calculate_HHI(data_input, 'applicant_rep_icon', 'id_publication'))
     
     #%% 2. 연도 별 피인용수 보정
     
@@ -115,6 +93,8 @@ if __name__ == '__main__':
     result = grouped['citation_forward_domestic_count'].agg(['count'])
     result = result.reset_index()
     result = result.sort_values(by = 'count', ascending = 0).reset_index(drop = 1)
+    
+    #%%
     
     # 기준 2-1. 피인용수 단순합
     grouped = data_input.groupby('applicant_rep_icon')

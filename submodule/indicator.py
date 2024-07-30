@@ -11,6 +11,13 @@ version: v1.0
 import pandas as pd
 import numpy as np 
 
+def calculate_HHI(market_shares):
+    # Convert market shares to proportions
+    market_shares = np.array(market_shares) / 100
+    # Calculate HHI
+    hhi = np.sum(market_shares**2) * 10000  # multiplying by 10000 to get the index in percentage points
+    return hhi
+    
 def calculate_CPP(data, group, citation_forward_count) :
     # CPP, Cites per patent
     return(data.groupby(group)[citation_forward_count].mean())
@@ -39,15 +46,6 @@ def calculate_CRn(data, group, citation_forward_count,n) :
     share = sorted(count/total, reverse = 1) 
     return(sum(share[0:n]))
 
-def calculate_HHI(data, group, id_publication) : 
-    # nan 제외
-    data = data.dropna(subset = [group, id_publication])
-    count = data.groupby(group)[id_publication].count()
-    total = count.shape[0]
-    share = [i/total*100 for i in count]
-    hhi = sum([i*i for i in share])
-    
-    return(hhi)
 
 def CAGR(first, last, periods): 
     first = first+1
