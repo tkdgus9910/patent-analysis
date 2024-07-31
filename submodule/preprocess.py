@@ -95,7 +95,7 @@ def wisdomain_prep(data, drop_families = 1) :
     data['year_application'] = data['date_application'].apply(lambda x : int(x.split('.')[0]) if str(x) != 'nan'  else x)
     
     data['TA'] = data['title'] + '. ' + data['abstract']
-    data['TAF'] = data.apply(lambda x: x.TA + x.claims_rep , axis= 1)
+    data['TAF'] = data.apply(lambda x: x.TA + '. '+ x.claims_rep , axis= 1)
     
     
     data['CPC_sg'] = data['CPC'].apply(lambda x : x.split(', '))
