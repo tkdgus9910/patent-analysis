@@ -6,8 +6,6 @@ Created on Mon May 27 20:20:37 2024
 """
 
 
-
-
 if __name__ == '__main__':
     
     import os
@@ -65,7 +63,7 @@ if __name__ == '__main__':
     
     #%% generate smaple answer
     
-    client = OpenAI(api_key= key)
+    client = OpenAI()
     
     data_sample['answer'] = ""
     
@@ -253,8 +251,6 @@ if __name__ == '__main__':
         
         # data_input["abstract_tree"][idx]
     
-    #%%
-    
     data_input = data_input.loc[data_input["abstract_tree_"] != "", : ].reset_index(drop = 1)
     
     data_input["function"] = data_input["abstract_tree_"].apply(lambda x : x["Functions"])
@@ -323,10 +319,8 @@ if __name__ == '__main__':
     
     data_input.to_pickle(directory + 'output/save2.pkl')
     
-    
-    #%% test
+    # test
     temp = data_input[['id_wisdomain','function_list', 'HM']]
-    
     temp['Not_HM'] = temp.apply(lambda x : [i for i in x.function_list if i not in x.HM], axis= 1)
     
     # with open(directory + 'output/save1.pkl' ,"rb") as f :

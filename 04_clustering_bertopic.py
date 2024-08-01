@@ -5,12 +5,6 @@ Created on Mon Apr  8 15:25:05 2024
 @author: tmlab
 """
 
-
-
-
-
-
-
 if __name__ == '__main__':
     
     import os
@@ -225,10 +219,9 @@ if __name__ == '__main__':
             score = model.relative_validity_ #hdbscan
         
         return(score)
-        
-    #%%
+       
     
-    def visualization4pt(docs, embeddings, K, cs_method)  : 
+    def finding_hp(docs, embeddings, K, cs_method)  : 
         
         DBCV_results = [] # Density-based clustering validation
         silhouette_results = [] 
@@ -239,7 +232,10 @@ if __name__ == '__main__':
         for min_cluster_size in K : 
             
             bertopic_1 = Bertopic_classic(docs, embeddings)
-            model = bertopic_1.fit(min_cluster_size, cs_method, "just_performance")
+            
+            model = bertopic_1.fit("just_performance",
+                                   min_cluster_size = min_cluster_size, 
+                                   cluster_selection_method = cs_method, )
             
             DBCV_results.append(model.relative_validity_)
             
@@ -296,6 +292,7 @@ if __name__ == '__main__':
         plt.ylabel('biggest_cluster_ratio', fontsize=15)
         plt.show()
         
+        
     
     #%% data load and setting
     warnings.filterwarnings("ignore")
@@ -334,7 +331,7 @@ if __name__ == '__main__':
     embeddings_input = umap_model.fit_transform(embeddings_docs) 
     
     # 파라미터 탐색
-    visualization4pt(docs, embeddings_input, range(5,101,5), 'eom', )
+    finding_hp(docs, embeddings_input, range(5,101,5), 'eom', )
      
     # 결과 도출 
     bertopic_1 = Bertopic_classic(docs, embeddings_input)
@@ -369,7 +366,7 @@ if __name__ == '__main__':
     embeddings_input = np.concatenate((embeddings_input, embeddings_cpc), axis = 1)
     
     # 파라미터 탐색
-    visualization4pt(docs, embeddings_input, range(5,101,5), 'eom', )
+    finding_hp(docs, embeddings_input, range(5,101,5), 'eom', )
      
     # 결과 도출 
     bertopic_1 = Bertopic_classic(docs, embeddings_input)
@@ -378,8 +375,67 @@ if __name__ == '__main__':
     result_document_info = model.get_document_info(docs) # 40개의 도메인
     # bertopic_parameter_tuning(range(5,101,5), 'eom', docs, embeddings_input)
     
+    #%% case 3. incremental - merging model
     
-    #%% case 3. incremental
+    # time_stamps = list(data_input['time_stamp'])
+    embedding_model = SentenceTransformer('AI-Growth-Lab/PatentSBERTa')
+    
+    data_input = data_preprocessed.loc[data_preprocessed["file"] == "quantum.csv", :].reset_index(drop = 1)
+    data_input = data_input.loc[data_input['year_application'] <= 2020, :]
+    data_input = data_input.loc[data_input['year_application'] >= 2010, :].reset_index(drop = 1)
+    data_input['time_stamp'] = data_input['year_application'].apply(lambda x : int((x-2010)/2))
+    
+    results_time_stamp = {}
+    results_time_stamp['time'] = list(range(2010,2020,2))
+    results_time_stamp['model'] = []
+    results_time_stamp['model_merged'] = []
+    
+    results_time_stamp['docs_cumulative'] = []
+    results_time_stamp['topic_info'] = []
+    results_time_stamp['document_info'] = []
+    # results_time_stamp['topic_info'] = []
+    
+    umap_model = UMAP(n_neighbors=15, 
+                      n_components = 5, 
+                      min_dist=0.0, 
+                      metric='euclidean', 
+                      random_state=42)
+    
+    docs_cumulative = []
+    
+    for time_stamp in range(0,6) : 
+        
+        data_temp = data_input.loc[data_input['time_stamp'].apply(lambda x : x == time_stamp ), :].reset_index(drop = 1)
+        docs = list(data_temp['abstract']) 
+        
+        embeddings_docs = embedding_model.encode(docs ,device='cuda')
+        embeddings_input = umap_model.fit_transform(embeddings_docs) 
+        
+        # finding_hp(docs, embeddings_input, range(5,101,5), "eom")
+        
+        bertopic_1 = Bertopic_classic(docs, embeddings_input)
+        model = bertopic_1.fit("final",
+                               min_cluster_size=15,
+                               cluster_selection_method= 'eom')
+        
+        results_time_stamp['model'].append(model)
+        
+        docs_cumulative = docs_cumulative + docs
+        
+        results_time_stamp['docs_cumulative'].append(docs_cumulative)
+        
+        model_list = results_time_stamp['model']
+        model_merged = BERTopic.merge_models(model_list, min_similarity=0.95)    
+        results_time_stamp['model_merged'].append(model_merged)
+        result_topic_info = model_merged.get_topic_info()
+        result_document_info = model_merged.get_document_info(docs_cumulative) # 40개의 도메인
+    
+        results_time_stamp['topic_info'].append(result_topic_info)
+        results_time_stamp['document_info'].append(result_document_info)
+        
+        print("time : ", time_stamp, " topic_size : ", len(result_topic_info))
+    
+    #%% case 3-2. incremental-dbstream
     
     # docs_time_series = []
     data_input = data_preprocessed.loc[data_preprocessed["file"] == "quantum.csv", :].reset_index(drop = 1)
@@ -400,10 +456,13 @@ if __name__ == '__main__':
 
     bertopic_2 = Bertopic_incremental(docs, embeddings_input, periods)
     
+    
     model, topics = bertopic_2.fit("final", clustering_threshold = 3)
     result_topic_info = model.get_topic_info()
     
-    #%% case 3-2. finding best model
+    
+    
+    #%% case 3-3. finding best model
     
     # evaluating_cls(model, embeddings_input, topics, method = "silhouette")
 
@@ -432,7 +491,7 @@ if __name__ == '__main__':
     
     # Define the hyperparameter space
     
-    space = {'clustering_threshold' : hp.uniform('clustering_threshold', 0.1, 10), #default 1.0, 커지면 마이크로 클러스터 생성 x
+    space = {'clustering_threshold' : hp.uniform('clustering_threshold', 0.5, 5), #default 1.0, 커지면 마이크로 클러스터 생성 x
             # 'fading_factor' : hp.uniform('fading_factor', 0.005, 0.015), 
             # 'intersection_factor' : hp.uniform('intersection_factor', 0.15, 0.6), #default 1.0, 커지면 마이크로 클러스터 생성 x
             # 'minimum_weight' : hp.uniform('minimum_weight', 0.5, 1.5) #default 1.0, 커지면 마이크로 클러스터 생성 x
